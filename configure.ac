@@ -409,6 +409,7 @@ AC_CHECK_HEADERS(\
 	sys/cdio.h \
 	sys/epoll.h \
 	sys/event.h \
+	sys/eventfd.h \
 	sys/extattr.h \
 	sys/filio.h \
 	sys/ipc.h \
@@ -2082,9 +2083,12 @@ AC_CHECK_FUNCS(\
 	port_create \
 	posix_fadvise \
 	posix_fallocate \
+	ppoll \
 	prctl \
 	proc_pidinfo \
 	sched_yield \
+	renameat \
+	renameat2 \
 	setproctitle \
 	setprogname \
 	sigprocmask \
@@ -2104,6 +2108,12 @@ case $host_os in
     LIBS=$ac_save_LIBS
     ;;
 esac
+
+ac_save_LIBS=$LIBS
+AC_SEARCH_LIBS(shm_open, rt,
+               [AC_DEFINE(HAVE_SHM_OPEN, 1, [Define to 1 if you have the `shm_open' function.])
+                test "$ac_res" = "none required" || AC_SUBST(RT_LIBS,"$ac_res")])
+LIBS=$ac_save_LIBS
 
 AC_CACHE_CHECK([for sched_setaffinity],wine_cv_have_sched_setaffinity,
                 AC_LINK_IFELSE([AC_LANG_PROGRAM(

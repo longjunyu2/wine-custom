@@ -36,7 +36,23 @@
 #ifdef HAVE_SYS_STATVFS_H
 # include <sys/statvfs.h>
 #endif
+#include <termios.h>
 #include <unistd.h>
+#ifdef HAVE_SYS_STATFS_H
+# include <sys/statfs.h>
+#endif
+#ifdef HAVE_SYS_SYSCALL_H
+# include <sys/syscall.h>
+#endif
+#ifdef HAVE_SYS_VFS_H
+# include <sys/vfs.h>
+#endif
+#ifdef HAVE_SYS_PARAM_H
+#include <sys/param.h>
+#endif
+#ifdef HAVE_SYS_MOUNT_H
+#include <sys/mount.h>
+#endif
 
 #include "unixlib.h"
 #include "wine/debug.h"
@@ -296,6 +312,27 @@ static NTSTATUS set_dosdev_symlink( void *args )
     char *path;
     NTSTATUS status = STATUS_SUCCESS;
 
+#ifdef linux
+    /* Serial port device files almost always exist on Linux even if the corresponding serial
+     * ports don't exist. Do a basic functionality check before advertising a serial port. */
+    if (params->serial)
+    {
+        struct termios tios;
+        int fd;
+
+        if ((fd = open( params->dest, O_RDONLY )) == -1)
+            return FALSE;
+
+        if (tcgetattr( fd, &tios ) == -1)
+        {
+            close( fd );
+            return FALSE;
+        }
+
+        close( fd );
+    }
+#endif
+
     if (!(path = get_dosdevices_path( params->dev ))) return STATUS_NO_MEMORY;
 
     if (params->dest && params->dest[0])
@@ -431,6 +468,87 @@ static NTSTATUS read_volume_file( void *args )
     if (ret == -1) return STATUS_NO_SUCH_FILE;
     *params->size = ret;
     return STATUS_SUCCESS;
+}
+
+static NTSTATUS get_volume_filesystem( void *args )
+{
+#if defined(__NR_renameat2) || defined(RENAME_SWAP)
+    const struct get_volume_filesystem_params *params = args;
+#if defined(HAVE_FSTATFS)
+    struct statfs stfs;
+#elif defined(HAVE_FSTATVFS)
+    struct statvfs stfs;
+#endif
+    const char *fstypename = "unknown";
+    int fd = -1;
+
+    if (params->volume[0] != '/')
+    {
+        char *path = get_dosdevices_path( params->volume );
+        if (path) fd = open( path, O_RDONLY );
+        free( path );
+    }
+    else fd = open( params->volume, O_RDONLY );
+    if (fd == -1) return STATUS_NO_SUCH_FILE;
+
+#if defined(HAVE_FSTATFS)
+    if (fstatfs(fd, &stfs))
+        return STATUS_NO_SUCH_FILE;
+#elif defined(HAVE_FSTATVFS)
+    if (fstatvfs(fd, &stfs))
+        return STATUS_NO_SUCH_FILE;
+#endif
+    close( fd );
+#if defined(HAVE_FSTATFS) && defined(linux)
+    switch (stfs.f_type)
+    {
+    case 0x6969:      /* nfs */
+        fstypename = "nfs";
+        break;
+    case 0xff534d42:  /* cifs */
+        fstypename = "cifs";
+        break;
+    case 0x564c:      /* ncpfs */
+        fstypename = "ncpfs";
+        break;
+    case 0x01021994:  /* tmpfs */
+        fstypename = "tmpfs";
+        break;
+    case 0x28cd3d45:  /* cramfs */
+        fstypename = "cramfs";
+        break;
+    case 0x1373:      /* devfs */
+        fstypename = "devfs";
+        break;
+    case 0x9fa0:      /* procfs */
+        fstypename = "procfs";
+        break;
+    case 0xef51:      /* old ext2 */
+        fstypename = "ext2";
+        break;
+    case 0xef53:      /* ext2/3/4 */
+        fstypename = "ext2";
+        break;
+    case 0x4244:      /* hfs */
+        fstypename = "hfs";
+        break;
+    case 0xf995e849:  /* hpfs */
+        fstypename = "hpfs";
+        break;
+    case 0x5346544e:  /* ntfs */
+        fstypename = "ntfs";
+        break;
+    default:
+        break;
+    }
+#elif defined(__FreeBSD__) || defined(__FreeBSD_kernel__) || defined(__OpenBSD__) || defined(__DragonFly__) || defined(__APPLE__) || defined(__NetBSD__)
+    fstypename = stfs.f_fstypename;
+#endif
+    lstrcpynA( params->fstypename, fstypename, *params->size );
+    return STATUS_SUCCESS;
+#else
+    return STATUS_NOT_IMPLEMENTED;
+#endif
 }
 
 static NTSTATUS match_unixdev( void *args )
@@ -575,6 +693,7 @@ const unixlib_entry_t __wine_unix_call_funcs[] =
     write_credential,
     delete_credential,
     enumerate_credentials,
+    get_volume_filesystem,
 };
 
 C_ASSERT( ARRAYSIZE(__wine_unix_call_funcs) == unix_funcs_count );

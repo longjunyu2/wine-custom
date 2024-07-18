@@ -5985,11 +5985,11 @@ if test x$ac_prog_cxx_stdcxx = xno
 then :
   { printf "%s\n" "$as_me:${as_lineno-$LINENO}: checking for $CXX option to enable C++11 features" >&5
 printf %s "checking for $CXX option to enable C++11 features... " >&6; }
-if test ${ac_cv_prog_cxx_11+y}
+if test ${ac_cv_prog_cxx_cxx11+y}
 then :
   printf %s "(cached) " >&6
 else $as_nop
-  ac_cv_prog_cxx_11=no
+  ac_cv_prog_cxx_cxx11=no
 ac_save_CXX=$CXX
 cat confdefs.h - <<_ACEOF >conftest.$ac_ext
 /* end confdefs.h.  */
@@ -6031,11 +6031,11 @@ if test x$ac_prog_cxx_stdcxx = xno
 then :
   { printf "%s\n" "$as_me:${as_lineno-$LINENO}: checking for $CXX option to enable C++98 features" >&5
 printf %s "checking for $CXX option to enable C++98 features... " >&6; }
-if test ${ac_cv_prog_cxx_98+y}
+if test ${ac_cv_prog_cxx_cxx98+y}
 then :
   printf %s "(cached) " >&6
 else $as_nop
-  ac_cv_prog_cxx_98=no
+  ac_cv_prog_cxx_cxx98=no
 ac_save_CXX=$CXX
 cat confdefs.h - <<_ACEOF >conftest.$ac_ext
 /* end confdefs.h.  */
@@ -8161,12 +8161,6 @@ ac_fn_c_check_header_compile "$LINENO" "sys/event.h" "ac_cv_header_sys_event_h" 
 if test "x$ac_cv_header_sys_event_h" = xyes
 then :
   printf "%s\n" "#define HAVE_SYS_EVENT_H 1" >>confdefs.h
-
-fi
-ac_fn_c_check_header_compile "$LINENO" "sys/eventfd.h" "ac_cv_header_sys_eventfd_h" "$ac_includes_default"
-if test "x$ac_cv_header_sys_eventfd_h" = xyes
-then :
-  printf "%s\n" "#define HAVE_SYS_EVENTFD_H 1" >>confdefs.h
 
 fi
 ac_fn_c_check_header_compile "$LINENO" "sys/extattr.h" "ac_cv_header_sys_extattr_h" "$ac_includes_default"
@@ -20845,12 +20839,6 @@ then :
   printf "%s\n" "#define HAVE_POSIX_FALLOCATE 1" >>confdefs.h
 
 fi
-ac_fn_c_check_func "$LINENO" "ppoll" "ac_cv_func_ppoll"
-if test "x$ac_cv_func_ppoll" = xyes
-then :
-  printf "%s\n" "#define HAVE_PPOLL 1" >>confdefs.h
-
-fi
 ac_fn_c_check_func "$LINENO" "prctl" "ac_cv_func_prctl"
 if test "x$ac_cv_func_prctl" = xyes
 then :
@@ -20867,18 +20855,6 @@ ac_fn_c_check_func "$LINENO" "sched_yield" "ac_cv_func_sched_yield"
 if test "x$ac_cv_func_sched_yield" = xyes
 then :
   printf "%s\n" "#define HAVE_SCHED_YIELD 1" >>confdefs.h
-
-fi
-ac_fn_c_check_func "$LINENO" "renameat" "ac_cv_func_renameat"
-if test "x$ac_cv_func_renameat" = xyes
-then :
-  printf "%s\n" "#define HAVE_RENAMEAT 1" >>confdefs.h
-
-fi
-ac_fn_c_check_func "$LINENO" "renameat2" "ac_cv_func_renameat2"
-if test "x$ac_cv_func_renameat2" = xyes
-then :
-  printf "%s\n" "#define HAVE_RENAMEAT2 1" >>confdefs.h
 
 fi
 ac_fn_c_check_func "$LINENO" "setproctitle" "ac_cv_func_setproctitle"
@@ -20989,72 +20965,6 @@ fi
     LIBS=$ac_save_LIBS
     ;;
 esac
-
-ac_save_LIBS=$LIBS
-{ printf "%s\n" "$as_me:${as_lineno-$LINENO}: checking for library containing shm_open" >&5
-printf %s "checking for library containing shm_open... " >&6; }
-if test ${ac_cv_search_shm_open+y}
-then :
-  printf %s "(cached) " >&6
-else $as_nop
-  ac_func_search_save_LIBS=$LIBS
-cat confdefs.h - <<_ACEOF >conftest.$ac_ext
-/* end confdefs.h.  */
-
-/* Override any GCC internal prototype to avoid an error.
-   Use char because int might match the return type of a GCC
-   builtin and then its argument prototype would still apply.  */
-char shm_open ();
-int
-main (void)
-{
-return shm_open ();
-  ;
-  return 0;
-}
-_ACEOF
-for ac_lib in '' rt
-do
-  if test -z "$ac_lib"; then
-    ac_res="none required"
-  else
-    ac_res=-l$ac_lib
-    LIBS="-l$ac_lib  $ac_func_search_save_LIBS"
-  fi
-  if ac_fn_c_try_link "$LINENO"
-then :
-  ac_cv_search_shm_open=$ac_res
-fi
-rm -f core conftest.err conftest.$ac_objext conftest.beam \
-    conftest$ac_exeext
-  if test ${ac_cv_search_shm_open+y}
-then :
-  break
-fi
-done
-if test ${ac_cv_search_shm_open+y}
-then :
-
-else $as_nop
-  ac_cv_search_shm_open=no
-fi
-rm conftest.$ac_ext
-LIBS=$ac_func_search_save_LIBS
-fi
-{ printf "%s\n" "$as_me:${as_lineno-$LINENO}: result: $ac_cv_search_shm_open" >&5
-printf "%s\n" "$ac_cv_search_shm_open" >&6; }
-ac_res=$ac_cv_search_shm_open
-if test "$ac_res" != no
-then :
-  test "$ac_res" = "none required" || LIBS="$ac_res $LIBS"
-
-printf "%s\n" "#define HAVE_SHM_OPEN 1" >>confdefs.h
-
-                test "$ac_res" = "none required" || RT_LIBS="$ac_res"
-
-fi
-
-LIBS=$ac_save_LIBS
 
 { printf "%s\n" "$as_me:${as_lineno-$LINENO}: checking for sched_setaffinity" >&5
 printf %s "checking for sched_setaffinity... " >&6; }
