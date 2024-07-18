@@ -79,9 +79,9 @@ void esync_init(void)
         fatal_error( "cannot stat config dir\n" );
 
     if (st.st_ino != (unsigned long)st.st_ino)
-        sprintf( shm_name, "/wine-%lx%08lx-esync", (unsigned long)((unsigned long long)st.st_ino >> 32), (unsigned long)st.st_ino );
+        sprintf( shm_name, "/data/data/com.winlator/files/imagefs/tmp/wine-%lx%08lx-esync", (unsigned long)((unsigned long long)st.st_ino >> 32), (unsigned long)st.st_ino );
     else
-        sprintf( shm_name, "/wine-%lx-esync", (unsigned long)st.st_ino );
+        sprintf( shm_name, "/data/data/com.winlator/files/imagefs/tmp/wine-%lx-esync", (unsigned long)st.st_ino );
 
     shm_unlink( shm_name );
 
