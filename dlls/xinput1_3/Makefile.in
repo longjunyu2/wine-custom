@@ -1,6 +1,6 @@
 MODULE    = xinput1_3.dll
 IMPORTLIB = xinput
-IMPORTS   = hid setupapi advapi32 user32
+IMPORTS   = hid setupapi advapi32 user32 ws2_32
 
 SOURCES = \
 	main.c \

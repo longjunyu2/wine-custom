@@ -1,5 +1,5 @@
 MODULE    = xinput9_1_0.dll
-IMPORTS   = hid setupapi advapi32 user32
+IMPORTS   = hid setupapi advapi32 user32 ws2_32
 PARENTSRC = ../xinput1_3
 
 SOURCES = \

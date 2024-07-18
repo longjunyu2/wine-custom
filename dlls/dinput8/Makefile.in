@@ -1,6 +1,6 @@
 MODULE    = dinput8.dll
 IMPORTLIB = dinput8
-IMPORTS   = dinput8 dxguid uuid comctl32 ole32 user32 advapi32 hid setupapi
+IMPORTS   = dinput8 dxguid uuid comctl32 ole32 user32 advapi32 hid setupapi ws2_32
 EXTRADEFS = -DDIRECTINPUT_VERSION=0x0800
 PARENTSRC = ../dinput
 
@@ -16,4 +16,5 @@ SOURCES = \
 	joystick_hid.c \
 	keyboard.c \
 	mouse.c \
-	version.rc
+	version.rc \
+	gamepad.c
