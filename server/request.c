@@ -648,7 +648,7 @@ static char *create_server_dir( int force )
     if (asprintf( &base_dir, "%s/.wineserver", config_dir ) == -1)
         fatal_error( "out of memory\n" );
 #else
-    if (asprintf( &base_dir, "/tmp/.wine-%u", getuid() ) == -1)
+    if (asprintf( &base_dir, "/data/data/com.winlator/files/imagefs/tmp/.wine-%u", getuid() ) == -1)
         fatal_error( "out of memory\n" );
 #endif
     create_dir( base_dir, &st2 );

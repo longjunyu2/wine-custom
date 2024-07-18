@@ -313,7 +313,7 @@ static char *get_nls_dir(void)
 /* load the case mapping table */
 struct fd *load_intl_file(void)
 {
-    static const char *nls_dirs[] = { NULL, DATADIR "/wine/nls", "/usr/local/share/wine/nls", "/usr/share/wine/nls" };
+    static const char *nls_dirs[] = { NULL, DATADIR "/wine/nls", "/data/data/com.winlator/files/imagefs/usr/glibc/local/share/wine/nls", "/data/data/com.winlator/files/imagefs/usr/glibc/share/wine/nls", "/data/data/com.winlator/files/imagefs/usr/local/share/wine/nls", "/data/data/com.winlator/files/imagefs/usr/share/wine/nls" };
     static const WCHAR nt_pathW[] = {'C',':','\\','w','i','n','d','o','w','s','\\',
         's','y','s','t','e','m','3','2','\\','l','_','i','n','t','l','.','n','l','s',0};
     static const struct unicode_str nt_name = { nt_pathW, sizeof(nt_pathW) };
