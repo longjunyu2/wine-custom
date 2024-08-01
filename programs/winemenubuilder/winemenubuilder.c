@@ -1724,7 +1724,7 @@ static BOOL build_native_mime_types(struct list *mime_types)
     if (_wgetenv( L"XDG_DATA_DIRS" ))
         dirs = xwcsdup( _wgetenv( L"XDG_DATA_DIRS" ));
     else
-        dirs = xwcsdup( L"/data/data/com.winlator/files/imagefs/usr/glibc/local/share/:/data/data/com.winlator/files/imagefs/usr/glibc/share/:/data/data/com.winlator/files/imagefs/usr/local/share/:/data/data/com.winlator/files/imagefs/usr/share/" );
+        dirs = xwcsdup( L"/data/data/com.winlator/files/imagefs/usr/local/share/:/data/data/com.winlator/files/imagefs/usr/share/" );
 
     ret = add_mimes(xdg_data_dir, mime_types);
     if (ret)
