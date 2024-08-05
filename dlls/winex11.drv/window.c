@@ -495,73 +495,6 @@ static void sync_window_text( Display *display, Window win, const WCHAR *text )
 
 
 /***********************************************************************
- *              get_bitmap_argb
- *
- * Return the bitmap bits in ARGB format. Helper for setting icon hints.
- */
-static unsigned long *get_bitmap_argb( HDC hdc, HBITMAP color, HBITMAP mask, unsigned int *size )
-{
-    char buffer[FIELD_OFFSET( BITMAPINFO, bmiColors[256] )];
-    BITMAPINFO *info = (BITMAPINFO *)buffer;
-    BITMAP bm;
-    unsigned int *ptr, *bits = NULL;
-    unsigned char *mask_bits = NULL;
-    int i, j;
-    BOOL has_alpha = FALSE;
-
-    if (!NtGdiExtGetObjectW( color, sizeof(bm), &bm )) return NULL;
-    info->bmiHeader.biSize = sizeof(BITMAPINFOHEADER);
-    info->bmiHeader.biWidth = bm.bmWidth;
-    info->bmiHeader.biHeight = -bm.bmHeight;
-    info->bmiHeader.biPlanes = 1;
-    info->bmiHeader.biBitCount = 32;
-    info->bmiHeader.biCompression = BI_RGB;
-    info->bmiHeader.biSizeImage = bm.bmWidth * bm.bmHeight * 4;
-    info->bmiHeader.biXPelsPerMeter = 0;
-    info->bmiHeader.biYPelsPerMeter = 0;
-    info->bmiHeader.biClrUsed = 0;
-    info->bmiHeader.biClrImportant = 0;
-    *size = bm.bmWidth * bm.bmHeight + 2;
-    if (!(bits = malloc( *size * sizeof(long) ))) goto failed;
-    if (!NtGdiGetDIBitsInternal( hdc, color, 0, bm.bmHeight, bits + 2, info, DIB_RGB_COLORS, 0, 0 ))
-        goto failed;
-
-    bits[0] = bm.bmWidth;
-    bits[1] = bm.bmHeight;
-
-    for (i = 0; i < bm.bmWidth * bm.bmHeight; i++)
-        if ((has_alpha = (bits[i + 2] & 0xff000000) != 0)) break;
-
-    if (!has_alpha)
-    {
-        unsigned int width_bytes = (bm.bmWidth + 31) / 32 * 4;
-        /* generate alpha channel from the mask */
-        info->bmiHeader.biBitCount = 1;
-        info->bmiHeader.biSizeImage = width_bytes * bm.bmHeight;
-        if (!(mask_bits = malloc( info->bmiHeader.biSizeImage ))) goto failed;
-        if (!NtGdiGetDIBitsInternal( hdc, mask, 0, bm.bmHeight, mask_bits, info, DIB_RGB_COLORS, 0, 0 ))
-            goto failed;
-        ptr = bits + 2;
-        for (i = 0; i < bm.bmHeight; i++)
-            for (j = 0; j < bm.bmWidth; j++, ptr++)
-                if (!((mask_bits[i * width_bytes + j / 8] << (j % 8)) & 0x80)) *ptr |= 0xff000000;
-        free( mask_bits );
-    }
-
-    /* convert to array of longs */
-    if (bits && sizeof(long) > sizeof(int))
-        for (i = *size - 1; i >= 0; i--) ((unsigned long *)bits)[i] = bits[i];
-
-    return (unsigned long *)bits;
-
-failed:
-    free( bits );
-    free( mask_bits );
-    return NULL;
-}
-
-
-/***********************************************************************
  *              create_icon_pixmaps
  */
 static BOOL create_icon_pixmaps( HDC hdc, const ICONINFO *icon, Pixmap *icon_ret, Pixmap *mask_ret )
@@ -630,10 +563,8 @@ static HICON get_icon_info( HICON icon, ICONINFO *ii )
 static void fetch_icon_data( HWND hwnd, HICON icon_big, HICON icon_small )
 {
     struct x11drv_win_data *data;
-    ICONINFO ii, ii_small;
+    ICONINFO ii;
     HDC hDC;
-    unsigned int size;
-    unsigned long *bits;
     Pixmap icon_pixmap, mask_pixmap;
 
     icon_big = get_icon_info( icon_big, &ii );
@@ -650,37 +581,9 @@ static void fetch_icon_data( HWND hwnd, HICON icon_big, HICON icon_small )
         }
     }
 
-    icon_small = get_icon_info( icon_small, &ii_small );
-    if (!icon_small)
-    {
-        icon_small = get_icon_info( (HICON)send_message( hwnd, WM_GETICON, ICON_SMALL, 0 ), &ii_small );
-        if (!icon_small)
-            icon_small = get_icon_info( (HICON)NtUserGetClassLongPtrW( hwnd, GCLP_HICONSM ), &ii_small );
-    }
-
     if (!icon_big) return;
 
     hDC = NtGdiCreateCompatibleDC(0);
-    bits = get_bitmap_argb( hDC, ii.hbmColor, ii.hbmMask, &size );
-    if (bits && icon_small)
-    {
-        unsigned int size_small;
-        unsigned long *bits_small, *new;
-
-        if ((bits_small = get_bitmap_argb( hDC, ii_small.hbmColor, ii_small.hbmMask, &size_small )) &&
-            (bits_small[0] != bits[0] || bits_small[1] != bits[1]))  /* size must be different */
-        {
-            if ((new = realloc( bits, (size + size_small) * sizeof(unsigned long) )))
-            {
-                bits = new;
-                memcpy( bits + size, bits_small, size_small * sizeof(unsigned long) );
-                size += size_small;
-            }
-        }
-        free( bits_small );
-        NtGdiDeleteObjectApp( ii_small.hbmColor );
-        NtGdiDeleteObjectApp( ii_small.hbmMask );
-    }
 
     if (!create_icon_pixmaps( hDC, &ii, &icon_pixmap, &mask_pixmap )) icon_pixmap = mask_pixmap = 0;
 
@@ -692,18 +595,14 @@ static void fetch_icon_data( HWND hwnd, HICON icon_big, HICON icon_small )
     {
         if (data->icon_pixmap) XFreePixmap( gdi_display, data->icon_pixmap );
         if (data->icon_mask) XFreePixmap( gdi_display, data->icon_mask );
-        free( data->icon_bits );
         data->icon_pixmap = icon_pixmap;
         data->icon_mask = mask_pixmap;
-        data->icon_bits = bits;
-        data->icon_size = size;
         release_win_data( data );
     }
     else
     {
         if (icon_pixmap) XFreePixmap( gdi_display, icon_pixmap );
         if (mask_pixmap) XFreePixmap( gdi_display, mask_pixmap );
-        free( bits );
     }
 }
 
@@ -846,14 +745,6 @@ static void set_style_hints( struct x11drv_win_data *data, DWORD style, DWORD ex
         XSetWMHints( data->display, data->whole_window, wm_hints );
         XFree( wm_hints );
     }
-
-    if (data->icon_bits)
-        XChangeProperty( data->display, data->whole_window, x11drv_atom(_NET_WM_ICON),
-                         XA_CARDINAL, 32, PropModeReplace,
-                         (unsigned char *)data->icon_bits, data->icon_size );
-    else
-        XDeleteProperty( data->display, data->whole_window, x11drv_atom(_NET_WM_ICON) );
-
 }
 
 
@@ -862,12 +753,15 @@ static void set_style_hints( struct x11drv_win_data *data, DWORD style, DWORD ex
  *
  * Set the window manager hints that don't change over the lifetime of a window.
  */
-static void set_initial_wm_hints( Display *display, Window window )
+static void set_initial_wm_hints( Display *display, Window window, HWND hwnd )
 {
     long i;
+    DWORD pid = 0;
     Atom protocols[3];
+    BOOL is_wow64 = FALSE;
     Atom dndVersion = WINE_XDND_VERSION;
     XClassHint *class_hints;
+    ULONG_PTR pbi;
 
     /* wm protocols */
     i = 0;
@@ -888,10 +782,14 @@ static void set_initial_wm_hints( Display *display, Window window )
 
     /* set the WM_CLIENT_MACHINE and WM_LOCALE_NAME properties */
     XSetWMProperties(display, window, NULL, NULL, NULL, 0, NULL, NULL, NULL);
-    /* set the pid. together, these properties are needed so the window manager can kill us if we freeze */
-    i = getpid();
+
+    pid = GetCurrentProcessId();
     XChangeProperty(display, window, x11drv_atom(_NET_WM_PID),
-                    XA_CARDINAL, 32, PropModeReplace, (unsigned char *)&i, 1);
+                    XA_CARDINAL, 32, PropModeReplace, (unsigned char *)&pid, 1);
+
+    if (!NtQueryInformationProcess( GetCurrentProcess(), ProcessWow64Information, &pbi, sizeof(pbi), NULL )) is_wow64 = !!pbi;
+    XChangeProperty( display, window, x11drv_atom(_NET_WM_WOW64),
+                     XA_CARDINAL, 8, PropModeReplace, (unsigned char *)&is_wow64, 1 );
 
     XChangeProperty( display, window, x11drv_atom(XdndAware),
                      XA_ATOM, 32, PropModeReplace, (unsigned char*)&dndVersion, 1 );
@@ -900,6 +798,9 @@ static void set_initial_wm_hints( Display *display, Window window )
     if (user_time_window)
         XChangeProperty( display, window, x11drv_atom(_NET_WM_USER_TIME_WINDOW),
                          XA_WINDOW, 32, PropModeReplace, (unsigned char *)&user_time_window, 1 );
+
+    XChangeProperty( display, window, x11drv_atom(_NET_WM_HWND),
+                     XA_CARDINAL, 32, PropModeReplace, (unsigned char *)&hwnd, 2 );
 }
 
 
@@ -1778,7 +1679,7 @@ static void create_whole_window( struct x11drv_win_data *data )
     if (!data->whole_window) goto done;
 
     x11drv_xinput2_enable( data->display, data->whole_window );
-    set_initial_wm_hints( data->display, data->whole_window );
+    set_initial_wm_hints( data->display, data->whole_window, data->hwnd );
     set_wm_hints( data );
 
     XSaveContext( data->display, data->whole_window, winContext, (char *)data->hwnd );
@@ -1940,7 +1841,6 @@ void X11DRV_DestroyWindow( HWND hwnd )
     if (thread_data->last_xic_hwnd == hwnd) thread_data->last_xic_hwnd = 0;
     if (data->icon_pixmap) XFreePixmap( gdi_display, data->icon_pixmap );
     if (data->icon_mask) XFreePixmap( gdi_display, data->icon_mask );
-    free( data->icon_bits );
     XDeleteContext( gdi_display, (XID)hwnd, win_data_context );
     release_win_data( data );
     free( data );
@@ -1978,7 +1878,7 @@ static BOOL create_desktop_win_data( Window win, HWND hwnd )
     data->whole_window = win;
     data->managed = TRUE;
     NtUserSetProp( data->hwnd, whole_window_prop, (HANDLE)win );
-    set_initial_wm_hints( display, win );
+    set_initial_wm_hints( display, win, data->hwnd );
     release_win_data( data );
     if (thread_data->clip_window) XReparentWindow( display, thread_data->clip_window, win, 0, 0 );
     return TRUE;

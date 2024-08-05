@@ -536,6 +536,8 @@ enum x11drv_atoms
     XATOM_text_rtf,
     XATOM_text_richtext,
     XATOM_text_uri_list,
+    XATOM__NET_WM_HWND,
+    XATOM__NET_WM_WOW64,
     NB_XATOMS
 };
 
@@ -625,8 +627,6 @@ struct x11drv_win_data
     struct window_surface *surface;
     Pixmap         icon_pixmap;
     Pixmap         icon_mask;
-    unsigned long *icon_bits;
-    unsigned int   icon_size;
 };
 
 extern struct x11drv_win_data *get_win_data( HWND hwnd );
