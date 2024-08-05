@@ -263,8 +263,10 @@ static void controller_update_state(char *buffer)
         }
     }
     
-    state->Gamepad.bLeftTrigger = (buttons & (1<<10)) ? 255 : 0;
-    state->Gamepad.bRightTrigger = (buttons & (1<<11)) ? 255 : 0;
+    //state->Gamepad.bLeftTrigger = (buttons & (1<<10)) ? 255 : 0;
+    //state->Gamepad.bRightTrigger = (buttons & (1<<11)) ? 255 : 0;
+    state->Gamepad.bLeftTrigger = *(unsigned char*)(buffer + 17);
+    state->Gamepad.bRightTrigger = *(unsigned char*)(buffer + 18);
 
     switch (dpad)
     {
