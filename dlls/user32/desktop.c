@@ -138,11 +138,11 @@ BOOL WINAPI PaintDesktop(HDC hdc)
             }
             else
             {
-                x = (rect.left + rect.right - bitmapSize.cx) / 2;
-                y = (rect.top + rect.bottom - bitmapSize.cy) / 2;
-                if (x < 0) x = 0;
-                if (y < 0) y = 0;
-                BitBlt( hdc, x, y, bitmapSize.cx, bitmapSize.cy, hMemDC, 0, 0, SRCCOPY );
+                SIZE deskSize;
+                deskSize.cx = rect.right - rect.left;
+                deskSize.cy = rect.bottom - rect.top;
+
+                StretchBlt( hdc, 0, 0, deskSize.cx, deskSize.cy, hMemDC, 0, 0, bitmapSize.cx, bitmapSize.cy, SRCCOPY );
             }
             DeleteDC( hMemDC );
         }
